@@ -1,0 +1,4 @@
+wrk_api.db
+api
+server.log
+.env
