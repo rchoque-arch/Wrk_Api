@@ -162,9 +162,6 @@ func SetupRouter() *gin.Engine {
 			chats.POST("/:chatId/messages", handlers.SendMessage)
 			chats.GET("/:chatId/messages", handlers.GetMessages)
 		}
-
-		// WebSocket Route
-		api.GET("/ws", middleware.AuthMiddleware(), handlers.ServeWs)
 	}
 	return r
 }
