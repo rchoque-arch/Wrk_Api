@@ -35,6 +35,8 @@ func GetProjectMetrics(c *gin.Context) {
 		TaskStatusCounts: make(map[string]int64),
 	}
 
+	const doneStatus = "DONE"
+
 	// 1. Task Statistics
 	var tasks []models.Task
 	if err := database.DB.Where("project_id = ?", projectId).Find(&tasks).Error; err != nil {
@@ -45,7 +47,7 @@ func GetProjectMetrics(c *gin.Context) {
 	metrics.TotalTasks = int64(len(tasks))
 	for _, t := range tasks {
 		metrics.TaskStatusCounts[t.Status]++
-		if t.Status == "DONE" {
+		if t.Status == doneStatus {
 			metrics.CompletedTasks++
 		}
 	}
@@ -63,7 +65,7 @@ func GetProjectMetrics(c *gin.Context) {
 			points = *s.StoryPoints
 		}
 		metrics.TotalPoints += points
-		if s.Status == "DONE" {
+		if s.Status == doneStatus {
 			metrics.CompletedPoints += points
 		}
 	}
@@ -71,16 +73,14 @@ func GetProjectMetrics(c *gin.Context) {
 	// 3. Sprint Velocity (Average points of completed sprints)
 	// Find sprints that are essentially "done" (e.g. end date passed or status completed)
 	// For simplicity, let's assume we calculate based on stories linked to sprints.
-	type SprintPoints struct {
-		Points int
-	}
+
 	// Query: Select sprint_id, sum(story_points) group by sprint_id where status='DONE'
 	// Simplified logic: iterate stories
 	sprintPoints := make(map[string]int)
 	completedSprints := make(map[string]bool)
 
 	for _, s := range stories {
-		if s.SprintID != nil && s.Status == "DONE" {
+		if s.SprintID != nil && s.Status == doneStatus {
 			points := 0
 			if s.StoryPoints != nil {
 				points = *s.StoryPoints

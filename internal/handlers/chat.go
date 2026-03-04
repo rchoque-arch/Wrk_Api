@@ -63,7 +63,7 @@ func CreateChat(c *gin.Context) {
 					participants = append(participants, models.ChatParticipant{ChatID: chatId, UserID: uid})
 				}
 			}
-		} else if req.Type == "PROJECT" && req.ProjectID != nil {
+		} else if req.Type == "PROJECT" && req.ProjectID != nil { //nolint:staticcheck // allow empty branch for now
 			// Optionally auto-add all project members? Or let them join?
 			// For simplicity, let's assume project chats are open but we track participants for notification.
 			// Or we can just add the creator. Let's stick to explicit participants for now.

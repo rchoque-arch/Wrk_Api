@@ -98,10 +98,10 @@ func (h *Hub) Run() {
 }
 
 // BroadcastEvent is a helper to send notifications from REST handlers
-func (h *Hub) BroadcastEvent(projectId string, eventType string, payload interface{}) {
+func (h *Hub) BroadcastEvent(projectID, eventType string, payload interface{}) {
 	msg := Message{
 		Type:      eventType,
-		ProjectID: projectId,
+		ProjectID: projectID,
 		Payload:   payload,
 	}
 	h.broadcast <- msg

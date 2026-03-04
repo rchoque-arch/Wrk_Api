@@ -217,13 +217,14 @@ func UpdateUserStory(c *gin.Context) {
 		updates["assignee_id"] = req.AssigneeID
 	}
 
+	const doneStatus = "DONE"
 	if req.Status != nil {
 		newStatus := *req.Status
 		updates["status"] = newStatus
-		if newStatus == "DONE" && story.Status != "DONE" {
+		if newStatus == doneStatus && story.Status != doneStatus {
 			now := time.Now()
 			updates["completed_at"] = &now
-		} else if newStatus != "DONE" && story.Status == "DONE" {
+		} else if newStatus != doneStatus && story.Status == doneStatus {
 			updates["completed_at"] = nil
 		}
 	}

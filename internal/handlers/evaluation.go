@@ -78,7 +78,7 @@ func CreateEvaluation(c *gin.Context) {
 	// Calculate Score and Build Criteria
 	totalScore := 0
 	totalMaxScore := 0
-	var evalCriteriaList []models.EvaluationCriteria
+	evalCriteriaList := make([]models.EvaluationCriteria, 0, len(req.Criteria))
 
 	for _, item := range req.Criteria {
 		// Verify criteria exists (optimally should fetch all valid criteria IDs first)

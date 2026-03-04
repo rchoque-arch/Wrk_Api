@@ -32,7 +32,8 @@ func AddMember(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
-	if requesterMember.Role != "OWNER" {
+	const ownerRole = "OWNER"
+	if requesterMember.Role != ownerRole {
 		// Maybe ADMIN role too? Sticking to OWNER for strictness initially.
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only project owner can add members"})
 		return

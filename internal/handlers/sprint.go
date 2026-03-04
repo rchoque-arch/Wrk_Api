@@ -27,7 +27,7 @@ type UpdateSprintRequest struct {
 }
 
 // Helper to check if user is a member of the project
-func isProjectMember(userId string, projectId string) bool {
+func isProjectMember(userId, projectId string) bool {
 	var count int64
 	// In GORM, Count counts the number of rows.
 	// We need to query the project_members table

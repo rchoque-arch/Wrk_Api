@@ -52,7 +52,7 @@ func CreateRubric(c *gin.Context) {
 	}
 
 	// Build criteria
-	var criteriaList []models.Criteria
+	criteriaList := make([]models.Criteria, 0, len(req.Criteria))
 	for _, critReq := range req.Criteria {
 		criteriaList = append(criteriaList, models.Criteria{
 			ID:          uuid.NewString(),
