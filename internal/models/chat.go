@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Chat represents a chat room or direct message conversation.
 type Chat struct {
 	ID        string     `gorm:"primaryKey;type:string"`
 	ProjectID *string
@@ -18,10 +19,12 @@ type Chat struct {
 	Participants []ChatParticipant `gorm:"foreignKey:ChatID"`
 }
 
+// TableName specifies the custom table name for Chat.
 func (Chat) TableName() string {
 	return "chats"
 }
 
+// ChatParticipant represents a user participating in a chat.
 type ChatParticipant struct {
 	ChatID string `gorm:"primaryKey;type:string"`
 	UserID string `gorm:"primaryKey;type:string"`
@@ -30,10 +33,12 @@ type ChatParticipant struct {
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
+// TableName specifies the custom table name for ChatParticipant.
 func (ChatParticipant) TableName() string {
 	return "chat_participants"
 }
 
+// Message represents a single message in a chat.
 type Message struct {
 	ID        string    `gorm:"primaryKey;type:string"`
 	ChatID    string    `gorm:"not null"`
@@ -46,6 +51,7 @@ type Message struct {
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
+// TableName specifies the custom table name for Message.
 func (Message) TableName() string {
 	return "messages"
 }

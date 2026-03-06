@@ -23,15 +23,15 @@ type CreateEvaluationRequest struct {
 }
 
 func CreateEvaluation(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -50,14 +50,14 @@ func CreateEvaluation(c *gin.Context) {
 	// Validate Task/Sprint belongs to project
 	if req.TaskID != nil {
 		var count int64
-		database.DB.Model(&models.Task{}).Where("id = ? AND project_id = ?", *req.TaskID, projectId).Count(&count)
+		database.DB.Model(&models.Task{}).Where("id = ? AND project_id = ?", *req.TaskID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
 			return
 		}
 	} else if req.SprintID != nil {
 		var count int64
-		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectId).Count(&count)
+		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sprint ID"})
 			return
@@ -67,10 +67,10 @@ func CreateEvaluation(c *gin.Context) {
 	evaluationId := uuid.NewString()
 	evaluation := models.Evaluation{
 		ID:          evaluationId,
-		ProjectID:   projectId,
+		ProjectID:   projectID,
 		TaskID:      req.TaskID,
 		SprintID:    req.SprintID,
-		EvaluatorID: userId,
+		EvaluatorID: userID,
 		Status:      "COMPLETED",
 		Feedback:    req.Feedback,
 	}
@@ -120,27 +120,27 @@ func CreateEvaluation(c *gin.Context) {
 }
 
 func GetEvaluations(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var evaluations []models.Evaluation
-	query := database.DB.Where("project_id = ?", projectId)
+	query := database.DB.Where("project_id = ?", projectID)
 
-	if taskId := c.Query("taskId"); taskId != "" {
-		query = query.Where("task_id = ?", taskId)
+	if taskID := c.Query("taskId"); taskID != "" {
+		query = query.Where("task_id = ?", taskID)
 	}
-	if sprintId := c.Query("sprintId"); sprintId != "" {
-		query = query.Where("sprint_id = ?", sprintId)
+	if sprintID := c.Query("sprintId"); sprintID != "" {
+		query = query.Where("sprint_id = ?", sprintID)
 	}
 
 	if err := query.Preload("Evaluator").Preload("Criteria").Preload("Criteria.Criteria").Find(&evaluations).Error; err != nil {

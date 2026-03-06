@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// UserStory represents a high-level requirement or feature.
 type UserStory struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
@@ -26,15 +27,17 @@ type UserStory struct {
 	Tasks       []Task     `gorm:"foreignKey:UserStoryID" json:"tasks,omitempty"`
 }
 
+// TableName specifies the custom table name for UserStory.
 func (UserStory) TableName() string {
 	return "user_stories"
 }
 
+// Task represents a specific action item within a project or story.
 type Task struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
 	UserStoryID *string    `json:"userStoryId,omitempty"`
-	SprintID    *string    `json:"sprintId,omitempty"`
+	SprintID    *string    `json:"sprintID,omitempty"`
 	Title       string     `gorm:"not null" json:"title"`
 	Description *string    `json:"description,omitempty"`
 	Priority    string     `gorm:"default:'MEDIUM'" json:"priority"`
@@ -53,6 +56,7 @@ type Task struct {
 	Evaluations []Evaluation `gorm:"foreignKey:TaskID" json:"evaluations,omitempty"`
 }
 
+// TableName specifies the custom table name for Task.
 func (Task) TableName() string {
 	return "tasks"
 }

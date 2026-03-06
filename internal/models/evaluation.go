@@ -4,9 +4,10 @@ import (
 	"time"
 )
 
+// Rubric defines the evaluation criteria structure.
 type Rubric struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
-	ProjectID   *string    `json:"projectId,omitempty"`
+	ProjectID   *string    `json:"projectID,omitempty"`
 	Name        string     `gorm:"not null" json:"name"`
 	Description *string    `json:"description,omitempty"`
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
@@ -17,10 +18,12 @@ type Rubric struct {
 	Criteria    []Criteria `gorm:"foreignKey:RubricID" json:"criteria,omitempty"`
 }
 
+// TableName specifies the custom table name for Rubric.
 func (Rubric) TableName() string {
 	return "rubrics"
 }
 
+// Criteria defines a specific condition to evaluate.
 type Criteria struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	RubricID    string     `gorm:"not null" json:"rubricId"`
@@ -32,15 +35,17 @@ type Criteria struct {
 	Rubric      Rubric     `gorm:"foreignKey:RubricID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
+// TableName specifies the custom table name for Criteria.
 func (Criteria) TableName() string {
 	return "criteria"
 }
 
+// Evaluation represents an assessment of a user or project.
 type Evaluation struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
-	TaskID      *string    `json:"taskId,omitempty"`
-	SprintID    *string    `json:"sprintId,omitempty"`
+	TaskID      *string    `json:"taskID,omitempty"`
+	SprintID    *string    `json:"sprintID,omitempty"`
 	EvaluatorID string     `gorm:"not null" json:"evaluatorId"`
 	Status      string     `gorm:"default:'PENDING'" json:"status"` // PENDING, COMPLETED
 	Feedback    *string    `json:"feedback,omitempty"`
@@ -56,10 +61,12 @@ type Evaluation struct {
 	Criteria    []EvaluationCriteria `gorm:"foreignKey:EvaluationID" json:"criteria,omitempty"`
 }
 
+// TableName specifies the custom table name for Evaluation.
 func (Evaluation) TableName() string {
 	return "evaluations"
 }
 
+// EvaluationCriteria associates specific criteria with an evaluation.
 type EvaluationCriteria struct {
 	ID           string     `gorm:"primaryKey;type:string" json:"id"`
 	EvaluationID string     `gorm:"not null;uniqueIndex:idx_eval_crit" json:"evaluationId"`
@@ -71,6 +78,7 @@ type EvaluationCriteria struct {
 	Criteria     Criteria   `gorm:"foreignKey:CriteriaID" json:"criteria,omitempty"`
 }
 
+// TableName specifies the custom table name for EvaluationCriteria.
 func (EvaluationCriteria) TableName() string {
 	return "evaluation_criteria"
 }

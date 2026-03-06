@@ -27,12 +27,12 @@ type UpdateSprintRequest struct {
 }
 
 // Helper to check if user is a member of the project
-func isProjectMember(userId string, projectId string) bool {
+func isProjectMember(userID string, projectID string) bool {
 	var count int64
 	// In GORM, Count counts the number of rows.
 	// We need to query the project_members table
 	err := database.DB.Model(&models.ProjectMember{}).
-		Where("project_id = ? AND user_id = ?", projectId, userId).
+		Where("project_id = ? AND user_id = ?", projectID, userID).
 		Count(&count).Error
 
 	if err != nil {
@@ -42,16 +42,16 @@ func isProjectMember(userId string, projectId string) bool {
 }
 
 func CreateSprint(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
 	// Validate Project Access
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -69,7 +69,7 @@ func CreateSprint(c *gin.Context) {
 
 	sprint := models.Sprint{
 		ID:          uuid.NewString(),
-		ProjectID:   projectId,
+		ProjectID:   projectID,
 		Name:        req.Name,
 		Description: req.Description,
 		StartDate:   req.StartDate,
@@ -86,21 +86,21 @@ func CreateSprint(c *gin.Context) {
 }
 
 func GetSprints(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var sprints []models.Sprint
-	if err := database.DB.Where("project_id = ?", projectId).Find(&sprints).Error; err != nil {
+	if err := database.DB.Where("project_id = ?", projectID).Find(&sprints).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sprints"})
 		return
 	}
@@ -109,22 +109,22 @@ func GetSprints(c *gin.Context) {
 }
 
 func GetSprint(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	sprintId := c.Param("sprintId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	sprintID := c.Param("sprintId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var sprint models.Sprint
-	if err := database.DB.First(&sprint, "id = ? AND project_id = ?", sprintId, projectId).Error; err != nil {
+	if err := database.DB.First(&sprint, "id = ? AND project_id = ?", sprintID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Sprint not found"})
 		} else {
@@ -137,16 +137,16 @@ func GetSprint(c *gin.Context) {
 }
 
 func UpdateSprint(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	sprintId := c.Param("sprintId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	sprintID := c.Param("sprintId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -158,7 +158,7 @@ func UpdateSprint(c *gin.Context) {
 	}
 
 	var sprint models.Sprint
-	if err := database.DB.First(&sprint, "id = ? AND project_id = ?", sprintId, projectId).Error; err != nil {
+	if err := database.DB.First(&sprint, "id = ? AND project_id = ?", sprintID, projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sprint not found"})
 		return
 	}
@@ -202,29 +202,29 @@ func UpdateSprint(c *gin.Context) {
 	}
 
 	// Refresh sprint data
-	database.DB.First(&sprint, "id = ?", sprintId)
+	database.DB.First(&sprint, "id = ?", sprintID)
 
 	c.JSON(http.StatusOK, sprint)
 }
 
 func DeleteSprint(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	sprintId := c.Param("sprintId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	sprintID := c.Param("sprintId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	// Ideally strictly check for roles, but skipping for now as per minimal viable plan
 
-	result := database.DB.Delete(&models.Sprint{}, "id = ? AND project_id = ?", sprintId, projectId)
+	result := database.DB.Delete(&models.Sprint{}, "id = ? AND project_id = ?", sprintID, projectID)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete sprint"})
 		return

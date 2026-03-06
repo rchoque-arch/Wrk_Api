@@ -34,15 +34,15 @@ type UpdateTaskRequest struct {
 }
 
 func CreateTask(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -56,7 +56,7 @@ func CreateTask(c *gin.Context) {
 	// Validation
 	if req.UserStoryID != nil {
 		var count int64
-		database.DB.Model(&models.UserStory{}).Where("id = ? AND project_id = ?", *req.UserStoryID, projectId).Count(&count)
+		database.DB.Model(&models.UserStory{}).Where("id = ? AND project_id = ?", *req.UserStoryID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user story ID"})
 			return
@@ -65,7 +65,7 @@ func CreateTask(c *gin.Context) {
 
 	if req.SprintID != nil {
 		var count int64
-		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectId).Count(&count)
+		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sprint ID"})
 			return
@@ -73,7 +73,7 @@ func CreateTask(c *gin.Context) {
 	}
 
 	if req.AssigneeID != nil {
-		if !isProjectMember(*req.AssigneeID, projectId) {
+		if !isProjectMember(*req.AssigneeID, projectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignee must be a project member"})
 			return
 		}
@@ -81,7 +81,7 @@ func CreateTask(c *gin.Context) {
 
 	task := models.Task{
 		ID:          uuid.NewString(),
-		ProjectID:   projectId,
+		ProjectID:   projectID,
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    "MEDIUM",
@@ -102,31 +102,31 @@ func CreateTask(c *gin.Context) {
 	}
 
 	// Broadcast Event
-	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_CREATED", task)
+	realtime.GlobalHub.BroadcastEvent(projectID, "TASK_CREATED", task)
 
 	c.JSON(http.StatusCreated, task)
 }
 
 func GetTasks(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var tasks []models.Task
-	query := database.DB.Where("project_id = ?", projectId)
+	query := database.DB.Where("project_id = ?", projectID)
 
 	// Filtering
-	if sprintId := c.Query("sprintId"); sprintId != "" {
-		query = query.Where("sprint_id = ?", sprintId)
+	if sprintID := c.Query("sprintId"); sprintID != "" {
+		query = query.Where("sprint_id = ?", sprintID)
 	}
 	if userStoryId := c.Query("userStoryId"); userStoryId != "" {
 		query = query.Where("user_story_id = ?", userStoryId)
@@ -144,22 +144,22 @@ func GetTasks(c *gin.Context) {
 }
 
 func GetTask(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	taskId := c.Param("taskId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	taskID := c.Param("taskId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var task models.Task
-	if err := database.DB.Preload("Assignee").Preload("Sprint").Preload("UserStory").First(&task, "id = ? AND project_id = ?", taskId, projectId).Error; err != nil {
+	if err := database.DB.Preload("Assignee").Preload("Sprint").Preload("UserStory").First(&task, "id = ? AND project_id = ?", taskID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		} else {
@@ -172,16 +172,16 @@ func GetTask(c *gin.Context) {
 }
 
 func UpdateTask(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	taskId := c.Param("taskId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	taskID := c.Param("taskId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -193,7 +193,7 @@ func UpdateTask(c *gin.Context) {
 	}
 
 	var task models.Task
-	if err := database.DB.First(&task, "id = ? AND project_id = ?", taskId, projectId).Error; err != nil {
+	if err := database.DB.First(&task, "id = ? AND project_id = ?", taskID, projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
@@ -215,7 +215,7 @@ func UpdateTask(c *gin.Context) {
 	// Validations for FKs
 	if req.UserStoryID != nil {
 		var count int64
-		database.DB.Model(&models.UserStory{}).Where("id = ? AND project_id = ?", *req.UserStoryID, projectId).Count(&count)
+		database.DB.Model(&models.UserStory{}).Where("id = ? AND project_id = ?", *req.UserStoryID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user story ID"})
 			return
@@ -224,7 +224,7 @@ func UpdateTask(c *gin.Context) {
 	}
 	if req.SprintID != nil {
 		var count int64
-		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectId).Count(&count)
+		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sprint ID"})
 			return
@@ -232,7 +232,7 @@ func UpdateTask(c *gin.Context) {
 		updates["sprint_id"] = req.SprintID
 	}
 	if req.AssigneeID != nil {
-		if !isProjectMember(*req.AssigneeID, projectId) {
+		if !isProjectMember(*req.AssigneeID, projectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignee must be a project member"})
 			return
 		}
@@ -260,36 +260,36 @@ func UpdateTask(c *gin.Context) {
 		return
 	}
 
-	database.DB.Preload("Assignee").Preload("Sprint").Preload("UserStory").First(&task, "id = ?", taskId)
+	database.DB.Preload("Assignee").Preload("Sprint").Preload("UserStory").First(&task, "id = ?", taskID)
 
 	// Broadcast Event
-	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_UPDATED", task)
+	realtime.GlobalHub.BroadcastEvent(projectID, "TASK_UPDATED", task)
 
 	c.JSON(http.StatusOK, task)
 }
 
 func DeleteTask(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	taskId := c.Param("taskId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	taskID := c.Param("taskId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
-	if err := database.DB.Delete(&models.Task{}, "id = ? AND project_id = ?", taskId, projectId).Error; err != nil {
+	if err := database.DB.Delete(&models.Task{}, "id = ? AND project_id = ?", taskID, projectID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task"})
 		return
 	}
 
 	// Broadcast Event
-	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_DELETED", gin.H{"id": taskId})
+	realtime.GlobalHub.BroadcastEvent(projectID, "TASK_DELETED", gin.H{"id": taskID})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

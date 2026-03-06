@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Sprint represents a time-boxed period to complete tasks.
 type Sprint struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
@@ -23,10 +24,12 @@ type Sprint struct {
 	Evaluations        []Evaluation        `gorm:"foreignKey:SprintID" json:"evaluations,omitempty"`
 }
 
+// TableName specifies the custom table name for Sprint.
 func (Sprint) TableName() string {
 	return "sprints"
 }
 
+// RetrospectiveItem represents a feedback point for a sprint.
 type RetrospectiveItem struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	SprintID  string    `gorm:"not null" json:"sprintId"`
@@ -39,6 +42,7 @@ type RetrospectiveItem struct {
 	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 }
 
+// TableName specifies the custom table name for RetrospectiveItem.
 func (RetrospectiveItem) TableName() string {
 	return "retrospective_items"
 }

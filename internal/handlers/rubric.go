@@ -24,15 +24,15 @@ type CreateRubricRequest struct {
 }
 
 func CreateRubric(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -43,10 +43,10 @@ func CreateRubric(c *gin.Context) {
 		return
 	}
 
-	rubricId := uuid.NewString()
+	rubricID := uuid.NewString()
 	rubric := models.Rubric{
-		ID:          rubricId,
-		ProjectID:   &projectId,
+		ID:          rubricID,
+		ProjectID:   &projectID,
 		Name:        req.Name,
 		Description: req.Description,
 	}
@@ -56,7 +56,7 @@ func CreateRubric(c *gin.Context) {
 	for _, critReq := range req.Criteria {
 		criteriaList = append(criteriaList, models.Criteria{
 			ID:          uuid.NewString(),
-			RubricID:    rubricId,
+			RubricID:    rubricID,
 			Name:        critReq.Name,
 			Description: critReq.Description,
 			MaxScore:    critReq.MaxScore,
@@ -74,21 +74,21 @@ func CreateRubric(c *gin.Context) {
 }
 
 func GetRubrics(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var rubrics []models.Rubric
-	if err := database.DB.Preload("Criteria").Where("project_id = ?", projectId).Find(&rubrics).Error; err != nil {
+	if err := database.DB.Preload("Criteria").Where("project_id = ?", projectID).Find(&rubrics).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch rubrics"})
 		return
 	}
@@ -97,22 +97,22 @@ func GetRubrics(c *gin.Context) {
 }
 
 func GetRubric(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	rubricId := c.Param("rubricId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	rubricID := c.Param("rubricId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var rubric models.Rubric
-	if err := database.DB.Preload("Criteria").First(&rubric, "id = ? AND project_id = ?", rubricId, projectId).Error; err != nil {
+	if err := database.DB.Preload("Criteria").First(&rubric, "id = ? AND project_id = ?", rubricID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Rubric not found"})
 		} else {
@@ -125,21 +125,21 @@ func GetRubric(c *gin.Context) {
 }
 
 func DeleteRubric(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	rubricId := c.Param("rubricId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	rubricID := c.Param("rubricId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
-	if err := database.DB.Delete(&models.Rubric{}, "id = ? AND project_id = ?", rubricId, projectId).Error; err != nil {
+	if err := database.DB.Delete(&models.Rubric{}, "id = ? AND project_id = ?", rubricID, projectID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rubric"})
 		return
 	}

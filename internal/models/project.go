@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Project represents a workspace for tasks and documents.
 type Project struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	Name        string     `gorm:"not null" json:"name"`
@@ -27,10 +28,12 @@ type Project struct {
 	Documents   []Document      `gorm:"foreignKey:ProjectID" json:"documents,omitempty"`
 }
 
+// TableName specifies the custom table name for Project.
 func (Project) TableName() string {
 	return "projects"
 }
 
+// ProjectMember represents a user participating in a project.
 type ProjectMember struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID string    `gorm:"not null;uniqueIndex:idx_project_member" json:"projectId"`
@@ -42,10 +45,12 @@ type ProjectMember struct {
 	User    User    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 }
 
+// TableName specifies the custom table name for ProjectMember.
 func (ProjectMember) TableName() string {
 	return "project_members"
 }
 
+// Document represents a file or text attached to a project.
 type Document struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID string    `gorm:"not null" json:"projectId"`
@@ -62,6 +67,7 @@ type Document struct {
 	Versions  []Document `gorm:"foreignKey:ParentID" json:"versions,omitempty"`
 }
 
+// TableName specifies the custom table name for Document.
 func (Document) TableName() string {
 	return "documents"
 }

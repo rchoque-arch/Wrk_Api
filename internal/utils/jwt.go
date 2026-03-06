@@ -1,3 +1,4 @@
+// Package utils contains utility functions like JWT and password hashing.
 package utils
 
 import (
@@ -6,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 func getSecret() []byte {
@@ -17,9 +18,10 @@ func getSecret() []byte {
 	return []byte(secret)
 }
 
-func GenerateToken(userId string) (string, error) {
+// GenerateToken creates a new JWT for the specified user ID.
+func GenerateToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userId,
+		"user_id": userID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 
@@ -27,6 +29,7 @@ func GenerateToken(userId string) (string, error) {
 	return token.SignedString(getSecret())
 }
 
+// ValidateToken parses and verifies a JWT token.
 func ValidateToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -41,8 +44,8 @@ func ValidateToken(tokenString string) (string, error) {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// Use type assertion safely
-		if userId, ok := claims["user_id"].(string); ok {
-			return userId, nil
+		if userID, ok := claims["user_id"].(string); ok {
+			return userID, nil
 		}
 		return "", errors.New("invalid token claims: user_id missing or invalid")
 	}
