@@ -39,7 +39,10 @@ func UploadDocument(c *gin.Context) {
 	// Ensure uploads dir exists
 	uploadPath := "uploads"
 	if _, err := os.Stat(uploadPath); os.IsNotExist(err) {
-		os.Mkdir(uploadPath, 0755)
+		if errMkdir := os.Mkdir(uploadPath, 0750); errMkdir != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+			return
+		}
 	}
 
 	// Generate safe filename
@@ -76,12 +79,18 @@ func UploadDocument(c *gin.Context) {
 
 			// Find max version
 			var maxVer int
-			database.DB.Model(&models.Document{}).
+			errScan := database.DB.Model(&models.Document{}).
 				Where("id = ? OR parent_id = ?", rootId, rootId).
 				Select("MAX(version)").
 				Row().Scan(&maxVer)
 
-			if maxVer == 0 { maxVer = parentDoc.Version } // Fallback
+			if errScan != nil {
+				maxVer = 0
+			}
+
+			if maxVer == 0 {
+				maxVer = parentDoc.Version
+			} // Fallback
 			version = maxVer + 1
 		}
 	}
@@ -100,7 +109,7 @@ func UploadDocument(c *gin.Context) {
 
 	if err := database.DB.Create(&doc).Error; err != nil {
 		// Clean up file if DB fails
-		os.Remove(dst)
+		_ = os.Remove(dst)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save document metadata"})
 		return
 	}
@@ -156,7 +165,7 @@ func DeleteDocument(c *gin.Context) {
 
 	// Delete file from disk
 	filePath := doc.URL
-	os.Remove(filePath) // Ignore error, maybe already gone
+	_ = os.Remove(filePath) // Ignore error, maybe already gone
 
 	if err := database.DB.Delete(&doc).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete document record"})

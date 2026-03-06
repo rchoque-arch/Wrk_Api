@@ -242,10 +242,10 @@ func UpdateTask(c *gin.Context) {
 	if req.Status != nil {
 		newStatus := *req.Status
 		updates["status"] = newStatus
-		if newStatus == "DONE" && task.Status != "DONE" {
+		if newStatus == statusDone && task.Status != statusDone {
 			now := time.Now()
 			updates["completed_at"] = &now
-		} else if newStatus != "DONE" && task.Status == "DONE" {
+		} else if newStatus != statusDone && task.Status == statusDone {
 			updates["completed_at"] = nil // This sets it to NULL in DB if using GORM map updates correctly with pointer or sql.NullTime
 			// Since completed_at is *time.Time, setting it to nil in map updates usually works if GORM is configured right.
 			// However, in Go map[string]interface{}, nil values are ignored by GORM updates by default unless using Select or specific config.

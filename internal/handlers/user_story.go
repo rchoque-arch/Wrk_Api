@@ -220,10 +220,10 @@ func UpdateUserStory(c *gin.Context) {
 	if req.Status != nil {
 		newStatus := *req.Status
 		updates["status"] = newStatus
-		if newStatus == "DONE" && story.Status != "DONE" {
+		if newStatus == statusDone && story.Status != statusDone {
 			now := time.Now()
 			updates["completed_at"] = &now
-		} else if newStatus != "DONE" && story.Status == "DONE" {
+		} else if newStatus != statusDone && story.Status == statusDone {
 			updates["completed_at"] = nil
 		}
 	}
