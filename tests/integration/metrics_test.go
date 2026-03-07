@@ -102,13 +102,15 @@ func createStory(r *gin.Engine, token, projectId, sprintId string, points int, s
 	if status != "BACKLOG" { // Default is BACKLOG
 		var story map[string]interface{}
 		json.Unmarshal(w.Body.Bytes(), &story)
-		storyId := story["id"].(string)
+		if idVal, ok := story["id"].(string); ok {
+			storyId := idVal
 
-		updateReq := handlers.UpdateUserStoryRequest{Status: &status}
-		jsonValue, _ = json.Marshal(updateReq)
-		httpReq, _ = http.NewRequest("PUT", "/api/projects/"+projectId+"/stories/"+storyId, bytes.NewBuffer(jsonValue))
-		httpReq.Header.Set("Authorization", "Bearer "+token)
-		w = httptest.NewRecorder()
-		r.ServeHTTP(w, httpReq)
+			updateReq := handlers.UpdateUserStoryRequest{Status: &status}
+			jsonValue, _ = json.Marshal(updateReq)
+			httpReq, _ = http.NewRequest("PUT", "/api/projects/"+projectId+"/stories/"+storyId, bytes.NewBuffer(jsonValue))
+			httpReq.Header.Set("Authorization", "Bearer "+token)
+			w = httptest.NewRecorder()
+			r.ServeHTTP(w, httpReq)
+		}
 	}
 }
