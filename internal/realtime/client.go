@@ -1,3 +1,4 @@
+// Package realtime provides realtime functionality.
 package realtime
 
 import (

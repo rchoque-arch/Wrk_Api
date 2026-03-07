@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Notification represents the Notification structure.
 type Notification struct {
 	ID        string    `gorm:"primaryKey;type:string"`
 	UserID    string    `gorm:"not null"`
@@ -16,6 +17,7 @@ type Notification struct {
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
+// TableName overrides the table name used by GORM for n.
 func (Notification) TableName() string {
 	return "notifications"
 }

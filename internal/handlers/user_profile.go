@@ -9,22 +9,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// UpdateUserRequest represents the UpdateUserRequest structure.
 type UpdateUserRequest struct {
 	Name     *string `json:"name"`
 	Avatar   *string `json:"avatar"`
 	Password *string `json:"password"`
 }
 
+// GetMe executes the GetMe operation.
 func GetMe(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var user models.User
-	if err := database.DB.First(&user, "id = ?", userId).Error; err != nil {
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -32,13 +34,14 @@ func GetMe(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// UpdateMe executes the UpdateMe operation.
 func UpdateMe(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,7 +50,7 @@ func UpdateMe(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, "id = ?", userId).Error; err != nil {
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}

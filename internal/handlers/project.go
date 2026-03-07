@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateProjectRequest represents the CreateProjectRequest structure.
 type CreateProjectRequest struct {
 	Name        string     `json:"name" binding:"required"`
 	Description *string    `json:"description"`
@@ -18,6 +19,7 @@ type CreateProjectRequest struct {
 	EndDate     *time.Time `json:"endDate"`
 }
 
+// UpdateProjectRequest represents the UpdateProjectRequest structure.
 type UpdateProjectRequest struct {
 	Name        string     `json:"name"`
 	Description *string    `json:"description"`
@@ -26,13 +28,14 @@ type UpdateProjectRequest struct {
 	EndDate     *time.Time `json:"endDate"`
 }
 
+// CreateProject executes the CreateProject operation.
 func CreateProject(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var req CreateProjectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -40,15 +43,15 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
-	projectId := uuid.NewString()
+	projectID := uuid.NewString()
 
 	project := models.Project{
-		ID:          projectId,
+		ID:          projectID,
 		Name:        req.Name,
 		Description: req.Description,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
-		OwnerID:     userId,
+		OwnerID:     userID,
 		Status:      "ACTIVE",
 	}
 
@@ -60,8 +63,8 @@ func CreateProject(c *gin.Context) {
 
 		member := models.ProjectMember{
 			ID:        uuid.NewString(),
-			ProjectID: projectId,
-			UserID:    userId,
+			ProjectID: projectID,
+			UserID:    userID,
 			Role:      "OWNER",
 		}
 
@@ -80,20 +83,21 @@ func CreateProject(c *gin.Context) {
 	c.JSON(http.StatusCreated, project)
 }
 
+// GetProjects executes the GetProjects operation.
 func GetProjects(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var projects []models.Project
 	// Correct query: find projects where user is a member
 	// JOIN project_members ON project_members.project_id = projects.id AND project_members.user_id = ?
 	err := database.DB.
 		Joins("JOIN project_members ON project_members.project_id = projects.id").
-		Where("project_members.user_id = ?", userId).
+		Where("project_members.user_id = ?", userID).
 		Find(&projects).Error
 
 	if err != nil {
@@ -104,22 +108,23 @@ func GetProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, projects)
 }
 
+// GetProject executes the GetProject operation.
 func GetProject(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
-	projectId := c.Param("id")
-	if projectId == "" {
-		projectId = c.Param("projectId")
+	projectID := c.Param("id")
+	if projectID == "" {
+		projectID = c.Param("projectId")
 	}
 
 	var project models.Project
 	// Preload members to check access
-	err := database.DB.Preload("Members").First(&project, "id = ?", projectId).Error
+	err := database.DB.Preload("Members").First(&project, "id = ?", projectID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
@@ -131,11 +136,11 @@ func GetProject(c *gin.Context) {
 
 	// Access Control: Must be a member or owner
 	isMember := false
-	if project.OwnerID == userId {
+	if project.OwnerID == userID {
 		isMember = true
 	} else {
 		for _, member := range project.Members {
-			if member.UserID == userId {
+			if member.UserID == userID {
 				isMember = true
 				break
 			}
@@ -150,17 +155,18 @@ func GetProject(c *gin.Context) {
 	c.JSON(http.StatusOK, project)
 }
 
+// UpdateProject executes the UpdateProject operation.
 func UpdateProject(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
-	projectId := c.Param("id")
-	if projectId == "" {
-		projectId = c.Param("projectId")
+	projectID := c.Param("id")
+	if projectID == "" {
+		projectID = c.Param("projectId")
 	}
 	var req UpdateProjectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -169,13 +175,13 @@ func UpdateProject(c *gin.Context) {
 	}
 
 	var project models.Project
-	if err := database.DB.First(&project, "id = ?", projectId).Error; err != nil {
+	if err := database.DB.First(&project, "id = ?", projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
 		return
 	}
 
 	// Only owner can update for now
-	if project.OwnerID != userId {
+	if project.OwnerID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only the owner can update the project"})
 		return
 	}
@@ -206,26 +212,27 @@ func UpdateProject(c *gin.Context) {
 	c.JSON(http.StatusOK, project)
 }
 
+// DeleteProject executes the DeleteProject operation.
 func DeleteProject(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
-	projectId := c.Param("id")
-	if projectId == "" {
-		projectId = c.Param("projectId")
+	projectID := c.Param("id")
+	if projectID == "" {
+		projectID = c.Param("projectId")
 	}
 
 	var project models.Project
-	if err := database.DB.First(&project, "id = ?", projectId).Error; err != nil {
+	if err := database.DB.First(&project, "id = ?", projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
 		return
 	}
 
-	if project.OwnerID != userId {
+	if project.OwnerID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only the owner can delete the project"})
 		return
 	}

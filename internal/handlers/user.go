@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateUser executes the CreateUser operation.
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -39,6 +40,7 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
+// GetUsers executes the GetUsers operation.
 func GetUsers(c *gin.Context) {
 	var users []models.User
 	if result := database.DB.Find(&users); result.Error != nil {

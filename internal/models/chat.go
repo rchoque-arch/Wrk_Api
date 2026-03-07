@@ -1,16 +1,18 @@
+// Package models provides models functionality.
 package models
 
 import (
 	"time"
 )
 
+// Chat represents the Chat structure.
 type Chat struct {
-	ID        string     `gorm:"primaryKey;type:string"`
+	ID        string `gorm:"primaryKey;type:string"`
 	ProjectID *string
 	Title     *string
-	Type      string     `gorm:"default:'PROJECT'"`
-	CreatedAt time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt time.Time  `gorm:"autoUpdateTime"`
+	Type      string    `gorm:"default:'PROJECT'"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
 	// Relationships
 	Project      *Project          `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
@@ -18,10 +20,12 @@ type Chat struct {
 	Participants []ChatParticipant `gorm:"foreignKey:ChatID"`
 }
 
+// TableName overrides the table name used by GORM for t.
 func (Chat) TableName() string {
 	return "chats"
 }
 
+// ChatParticipant represents the ChatParticipant structure.
 type ChatParticipant struct {
 	ChatID string `gorm:"primaryKey;type:string"`
 	UserID string `gorm:"primaryKey;type:string"`
@@ -30,10 +34,12 @@ type ChatParticipant struct {
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
+// TableName overrides the table name used by GORM for t.
 func (ChatParticipant) TableName() string {
 	return "chat_participants"
 }
 
+// Message represents the Message structure.
 type Message struct {
 	ID        string    `gorm:"primaryKey;type:string"`
 	ChatID    string    `gorm:"not null"`
@@ -46,6 +52,7 @@ type Message struct {
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
+// TableName overrides the table name used by GORM for e.
 func (Message) TableName() string {
 	return "messages"
 }

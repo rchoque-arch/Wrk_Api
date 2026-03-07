@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateChatRequest represents the CreateChatRequest structure.
 type CreateChatRequest struct {
 	ProjectID *string  `json:"projectId"`
 	Type      string   `json:"type" binding:"required"` // PROJECT, DIRECT
@@ -18,18 +19,19 @@ type CreateChatRequest struct {
 	Title     *string  `json:"title"`
 }
 
+// SendMessageRequest represents the SendMessageRequest structure.
 type SendMessageRequest struct {
 	Content string `json:"content" binding:"required"`
 }
 
 // CreateChat creates a new chat room
 func CreateChat(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var req CreateChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -37,9 +39,9 @@ func CreateChat(c *gin.Context) {
 		return
 	}
 
-	chatId := uuid.NewString()
+	chatID := uuid.NewString()
 	chat := models.Chat{
-		ID:        chatId,
+		ID:        chatID,
 		Type:      req.Type,
 		Title:     req.Title,
 		ProjectID: req.ProjectID,
@@ -53,20 +55,16 @@ func CreateChat(c *gin.Context) {
 
 		// Add creator
 		participants := []models.ChatParticipant{
-			{ChatID: chatId, UserID: userId},
+			{ChatID: chatID, UserID: userID},
 		}
 
 		// Add other users
 		if req.Type == "DIRECT" {
 			for _, uid := range req.UserIDs {
-				if uid != userId { // Avoid duplicate
-					participants = append(participants, models.ChatParticipant{ChatID: chatId, UserID: uid})
+				if uid != userID { // Avoid duplicate
+					participants = append(participants, models.ChatParticipant{ChatID: chatID, UserID: uid})
 				}
 			}
-		} else if req.Type == "PROJECT" && req.ProjectID != nil {
-			// Optionally auto-add all project members? Or let them join?
-			// For simplicity, let's assume project chats are open but we track participants for notification.
-			// Or we can just add the creator. Let's stick to explicit participants for now.
 		}
 
 		if len(participants) > 0 {
@@ -88,18 +86,18 @@ func CreateChat(c *gin.Context) {
 
 // GetUserChats returns chats the user is participating in
 func GetUserChats(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var chats []models.Chat
 	// Join with participants
 	err := database.DB.Distinct("chats.*").
 		Joins("JOIN chat_participants ON chat_participants.chat_id = chats.id").
-		Where("chat_participants.user_id = ?", userId).
+		Where("chat_participants.user_id = ?", userID).
 		Preload("Participants").
 		Preload("Participants.User"). // Load user details
 		Find(&chats).Error
@@ -114,17 +112,17 @@ func GetUserChats(c *gin.Context) {
 
 // SendMessage adds a message to a chat
 func SendMessage(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	chatId := c.Param("chatId")
+	userID := userIDStr.(string)
+	chatID := c.Param("chatId")
 
 	// Validate user is participant
 	var count int64
-	database.DB.Model(&models.ChatParticipant{}).Where("chat_id = ? AND user_id = ?", chatId, userId).Count(&count)
+	database.DB.Model(&models.ChatParticipant{}).Where("chat_id = ? AND user_id = ?", chatID, userID).Count(&count)
 	if count == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to chat"})
 		return
@@ -138,8 +136,8 @@ func SendMessage(c *gin.Context) {
 
 	message := models.Message{
 		ID:      uuid.NewString(),
-		ChatID:  chatId,
-		UserID:  userId,
+		ChatID:  chatID,
+		UserID:  userID,
 		Content: req.Content,
 	}
 
@@ -149,31 +147,35 @@ func SendMessage(c *gin.Context) {
 	}
 
 	// Broadcast Event
-	realtime.GlobalHub.BroadcastEvent(chatId, "MESSAGE_SENT", message)
+	realtime.GlobalHub.BroadcastEvent(chatID, "MESSAGE_SENT", message)
 
 	c.JSON(http.StatusCreated, message)
 }
 
 // GetMessages returns history for a chat
 func GetMessages(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	chatId := c.Param("chatId")
+	userID := userIDStr.(string)
+	chatID := c.Param("chatId")
 
 	// Validate access
 	var count int64
-	database.DB.Model(&models.ChatParticipant{}).Where("chat_id = ? AND user_id = ?", chatId, userId).Count(&count)
+	database.DB.Model(&models.ChatParticipant{}).Where("chat_id = ? AND user_id = ?", chatID, userID).Count(&count)
 	if count == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to chat"})
 		return
 	}
 
 	var messages []models.Message
-	if err := database.DB.Preload("User").Where("chat_id = ?", chatId).Order("created_at asc").Find(&messages).Error; err != nil {
+	if err := database.DB.
+		Preload("User").
+		Where("chat_id = ?", chatID).
+		Order("created_at asc").
+		Find(&messages).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch messages"})
 		return
 	}

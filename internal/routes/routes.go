@@ -1,3 +1,4 @@
+// Package routes provides routes functionality.
 package routes
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SetupRoutes executes the SetupRoutes operation.
 func SetupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	{

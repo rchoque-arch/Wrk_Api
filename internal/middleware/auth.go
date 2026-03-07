@@ -1,3 +1,4 @@
+// Package middleware provides middleware functionality.
 package middleware
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AuthMiddleware executes the AuthMiddleware operation.
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -25,14 +27,14 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		userId, err := utils.ValidateToken(tokenString)
+		userID, err := utils.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", userId)
+		c.Set("userID", userID)
 		c.Next()
 	}
 }

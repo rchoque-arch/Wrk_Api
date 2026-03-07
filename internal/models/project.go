@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Project represents the Project structure.
 type Project struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	Name        string     `gorm:"not null" json:"name"`
@@ -27,10 +28,12 @@ type Project struct {
 	Documents   []Document      `gorm:"foreignKey:ProjectID" json:"documents,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for t.
 func (Project) TableName() string {
 	return "projects"
 }
 
+// ProjectMember represents the ProjectMember structure.
 type ProjectMember struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID string    `gorm:"not null;uniqueIndex:idx_project_member" json:"projectId"`
@@ -42,26 +45,29 @@ type ProjectMember struct {
 	User    User    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for r.
 func (ProjectMember) TableName() string {
 	return "project_members"
 }
 
+// Document represents the Document structure.
 type Document struct {
-	ID        string    `gorm:"primaryKey;type:string" json:"id"`
-	ProjectID string    `gorm:"not null" json:"projectId"`
-	Name      string    `gorm:"not null" json:"name"`
-	URL       string    `gorm:"not null" json:"url"` // Simulated
-	Type      string    `gorm:"not null" json:"type"` // PDF, DOCX, etc.
-	Size      *int      `json:"size,omitempty"`       // KB
-	Version   int       `gorm:"default:1" json:"version"`
-	ParentID  *string   `json:"parentId,omitempty"`
+	ID         string    `gorm:"primaryKey;type:string" json:"id"`
+	ProjectID  string    `gorm:"not null" json:"projectId"`
+	Name       string    `gorm:"not null" json:"name"`
+	URL        string    `gorm:"not null" json:"url"`  // Simulated
+	Type       string    `gorm:"not null" json:"type"` // PDF, DOCX, etc.
+	Size       *int      `json:"size,omitempty"`       // KB
+	Version    int       `gorm:"default:1" json:"version"`
+	ParentID   *string   `json:"parentId,omitempty"`
 	UploadedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"uploadedAt"`
 
-	Project   Project   `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"project,omitempty"`
-	Parent    *Document `gorm:"foreignKey:ParentID;constraint:OnDelete:SET NULL" json:"parent,omitempty"`
-	Versions  []Document `gorm:"foreignKey:ParentID" json:"versions,omitempty"`
+	Project  Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"project,omitempty"`
+	Parent   *Document  `gorm:"foreignKey:ParentID;constraint:OnDelete:SET NULL" json:"parent,omitempty"`
+	Versions []Document `gorm:"foreignKey:ParentID" json:"versions,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for t.
 func (Document) TableName() string {
 	return "documents"
 }

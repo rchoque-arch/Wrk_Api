@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// Utility function to create a notification (internal use)
-func CreateNotification(userId, title, message, notifType string) error {
+// CreateNotification is a utility function to create a notification (internal use)
+func CreateNotification(userID, title, message, notifType string) error {
 	notification := models.Notification{
 		ID:      uuid.NewString(),
-		UserID:  userId,
+		UserID:  userID,
 		Title:   title,
 		Message: message,
 		Type:    notifType,
@@ -22,16 +22,17 @@ func CreateNotification(userId, title, message, notifType string) error {
 	return database.DB.Create(&notification).Error
 }
 
+// GetNotifications executes the GetNotifications operation.
 func GetNotifications(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
+	userID := userIDStr.(string)
 
 	var notifications []models.Notification
-	if err := database.DB.Where("user_id = ?", userId).Order("created_at desc").Find(&notifications).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).Order("created_at desc").Find(&notifications).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch notifications"})
 		return
 	}
@@ -39,18 +40,19 @@ func GetNotifications(c *gin.Context) {
 	c.JSON(http.StatusOK, notifications)
 }
 
+// MarkNotificationRead executes the MarkNotificationRead operation.
 func MarkNotificationRead(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	notificationId := c.Param("id")
+	userID := userIDStr.(string)
+	notificationID := c.Param("id")
 
 	// Ensure notification belongs to user
 	result := database.DB.Model(&models.Notification{}).
-		Where("id = ? AND user_id = ?", notificationId, userId).
+		Where("id = ? AND user_id = ?", notificationID, userID).
 		Update("read", true)
 
 	if result.Error != nil {

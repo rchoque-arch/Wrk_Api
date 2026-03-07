@@ -1,3 +1,4 @@
+// Package database provides database functionality.
 package database
 
 import (
@@ -9,8 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// DB is the exported variable.
 var DB *gorm.DB
 
+// InitDB executes the InitDB operation.
 func InitDB() {
 	dbPath := os.Getenv("DATABASE_URL")
 	if dbPath == "" {

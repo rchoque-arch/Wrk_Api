@@ -10,6 +10,7 @@ import (
 
 const statusDone = "DONE"
 
+// ProjectMetrics represents the ProjectMetrics structure.
 type ProjectMetrics struct {
 	TotalTasks       int64            `json:"totalTasks"`
 	CompletedTasks   int64            `json:"completedTasks"`
@@ -19,16 +20,17 @@ type ProjectMetrics struct {
 	SprintVelocity   float64          `json:"sprintVelocity"` // Average points per completed sprint
 }
 
+// GetProjectMetrics executes the GetProjectMetrics operation.
 func GetProjectMetrics(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -39,7 +41,7 @@ func GetProjectMetrics(c *gin.Context) {
 
 	// 1. Task Statistics
 	var tasks []models.Task
-	if err := database.DB.Where("project_id = ?", projectId).Find(&tasks).Error; err != nil {
+	if err := database.DB.Where("project_id = ?", projectID).Find(&tasks).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tasks"})
 		return
 	}
@@ -54,7 +56,7 @@ func GetProjectMetrics(c *gin.Context) {
 
 	// 2. User Story Points (Velocity)
 	var stories []models.UserStory
-	if err := database.DB.Where("project_id = ?", projectId).Find(&stories).Error; err != nil {
+	if err := database.DB.Where("project_id = ?", projectID).Find(&stories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user stories"})
 		return
 	}
