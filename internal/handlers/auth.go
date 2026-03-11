@@ -1,3 +1,4 @@
+// Package handlers provides handlers functionality.
 package handlers
 
 import (
@@ -11,6 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// RegisterRequest represents the RegisterRequest structure.
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Name     string `json:"name" binding:"required"`
@@ -18,16 +20,19 @@ type RegisterRequest struct {
 	Role     string `json:"role"` // Optional
 }
 
+// LoginRequest represents the LoginRequest structure.
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
+// AuthResponse represents the AuthResponse structure.
 type AuthResponse struct {
 	Token string      `json:"token"`
 	User  models.User `json:"user"`
 }
 
+// Register executes the Register operation.
 func Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -80,6 +85,7 @@ func Register(c *gin.Context) {
 	})
 }
 
+// Login executes the Login operation.
 func Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

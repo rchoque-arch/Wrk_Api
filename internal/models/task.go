@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// UserStory represents the UserStory structure.
 type UserStory struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
@@ -18,18 +19,20 @@ type UserStory struct {
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Relationships
-	AssigneeID  *string
-	Assignee    *User      `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
-	SprintID    *string
-	Sprint      *Sprint    `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
-	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
-	Tasks       []Task     `gorm:"foreignKey:UserStoryID" json:"tasks,omitempty"`
+	AssigneeID *string
+	Assignee   *User `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
+	SprintID   *string
+	Sprint     *Sprint `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
+	Project    Project `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
+	Tasks      []Task  `gorm:"foreignKey:UserStoryID" json:"tasks,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for y.
 func (UserStory) TableName() string {
 	return "user_stories"
 }
 
+// Task represents the Task structure.
 type Task struct {
 	ID          string     `gorm:"primaryKey;type:string" json:"id"`
 	ProjectID   string     `gorm:"not null" json:"projectId"`
@@ -46,13 +49,14 @@ type Task struct {
 
 	// Relationships
 	AssigneeID  *string
-	Assignee    *User      `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
-	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
-	UserStory   *UserStory `gorm:"foreignKey:UserStoryID" json:"userStory,omitempty"`
-	Sprint      *Sprint    `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
+	Assignee    *User        `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
+	Project     Project      `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
+	UserStory   *UserStory   `gorm:"foreignKey:UserStoryID" json:"userStory,omitempty"`
+	Sprint      *Sprint      `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
 	Evaluations []Evaluation `gorm:"foreignKey:TaskID" json:"evaluations,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for k.
 func (Task) TableName() string {
 	return "tasks"
 }

@@ -16,15 +16,15 @@ import (
 
 // UploadDocument handles file uploads linked to a project
 func UploadDocument(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -39,7 +39,10 @@ func UploadDocument(c *gin.Context) {
 	// Ensure uploads dir exists
 	uploadPath := "uploads"
 	if _, err := os.Stat(uploadPath); os.IsNotExist(err) {
-		os.Mkdir(uploadPath, 0755)
+		if errMkdir := os.Mkdir(uploadPath, 0750); errMkdir != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+			return
+		}
 	}
 
 	// Generate safe filename
@@ -58,30 +61,36 @@ func UploadDocument(c *gin.Context) {
 
 	// Versioning Logic
 	version := 1
-	var parentId *string
+	var parentID *string
 	if pid := c.Query("parentId"); pid != "" {
 		var parentDoc models.Document
-		if err := database.DB.First(&parentDoc, "id = ? AND project_id = ?", pid, projectId).Error; err == nil {
+		if err := database.DB.First(&parentDoc, "id = ? AND project_id = ?", pid, projectID).Error; err == nil {
 			// Found parent, increment version
 			// Ideally check if parent is latest or find max version in chain.
 			// Simplified: New upload becomes latest version of provided parent.
 			// Better: Find the latest version linked to this parent to get next number.
 
 			// If parent itself has a parent, use the root parent.
-			rootId := parentDoc.ID
+			rootID := parentDoc.ID
 			if parentDoc.ParentID != nil {
-				rootId = *parentDoc.ParentID
+				rootID = *parentDoc.ParentID
 			}
-			parentId = &rootId
+			parentID = &rootID
 
 			// Find max version
 			var maxVer int
-			database.DB.Model(&models.Document{}).
-				Where("id = ? OR parent_id = ?", rootId, rootId).
+			errScan := database.DB.Model(&models.Document{}).
+				Where("id = ? OR parent_id = ?", rootID, rootID).
 				Select("MAX(version)").
 				Row().Scan(&maxVer)
 
-			if maxVer == 0 { maxVer = parentDoc.Version } // Fallback
+			if errScan != nil {
+				maxVer = 0
+			}
+
+			if maxVer == 0 {
+				maxVer = parentDoc.Version
+			} // Fallback
 			version = maxVer + 1
 		}
 	}
@@ -89,18 +98,18 @@ func UploadDocument(c *gin.Context) {
 	// Create DB Record
 	doc := models.Document{
 		ID:        uuid.NewString(),
-		ProjectID: projectId,
+		ProjectID: projectID,
 		Name:      file.Filename,
 		URL:       dst, // Relative path
 		Type:      ext,
 		Size:      &sizeKB,
 		Version:   version,
-		ParentID:  parentId,
+		ParentID:  parentID,
 	}
 
 	if err := database.DB.Create(&doc).Error; err != nil {
 		// Clean up file if DB fails
-		os.Remove(dst)
+		_ = os.Remove(dst)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save document metadata"})
 		return
 	}
@@ -108,22 +117,23 @@ func UploadDocument(c *gin.Context) {
 	c.JSON(http.StatusCreated, doc)
 }
 
+// GetDocuments executes the GetDocuments operation.
 func GetDocuments(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var docs []models.Document
-	if err := database.DB.Where("project_id = ?", projectId).Find(&docs).Error; err != nil {
+	if err := database.DB.Where("project_id = ?", projectID).Find(&docs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch documents"})
 		return
 	}
@@ -131,23 +141,24 @@ func GetDocuments(c *gin.Context) {
 	c.JSON(http.StatusOK, docs)
 }
 
+// DeleteDocument executes the DeleteDocument operation.
 func DeleteDocument(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	docId := c.Param("docId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	docID := c.Param("docId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var doc models.Document
-	if err := database.DB.First(&doc, "id = ? AND project_id = ?", docId, projectId).Error; err != nil {
+	if err := database.DB.First(&doc, "id = ? AND project_id = ?", docID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		}
@@ -156,7 +167,7 @@ func DeleteDocument(c *gin.Context) {
 
 	// Delete file from disk
 	filePath := doc.URL
-	os.Remove(filePath) // Ignore error, maybe already gone
+	_ = os.Remove(filePath) // Ignore error, maybe already gone
 
 	if err := database.DB.Delete(&doc).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete document record"})
@@ -168,22 +179,22 @@ func DeleteDocument(c *gin.Context) {
 
 // DownloadDocument serves the file content
 func DownloadDocument(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	docId := c.Param("docId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	docID := c.Param("docId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var doc models.Document
-	if err := database.DB.First(&doc, "id = ? AND project_id = ?", docId, projectId).Error; err != nil {
+	if err := database.DB.First(&doc, "id = ? AND project_id = ?", docID, projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}

@@ -4,16 +4,17 @@ import (
 	"time"
 )
 
+// Sprint represents the Sprint structure.
 type Sprint struct {
-	ID          string     `gorm:"primaryKey;type:string" json:"id"`
-	ProjectID   string     `gorm:"not null" json:"projectId"`
-	Name        string     `gorm:"not null" json:"name"`
-	Description *string    `json:"description,omitempty"`
-	StartDate   time.Time  `gorm:"not null" json:"startDate"`
-	EndDate     time.Time  `gorm:"not null" json:"endDate"`
-	Status      string     `gorm:"default:'PLANNING'" json:"status"`
-	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID          string    `gorm:"primaryKey;type:string" json:"id"`
+	ProjectID   string    `gorm:"not null" json:"projectId"`
+	Name        string    `gorm:"not null" json:"name"`
+	Description *string   `json:"description,omitempty"`
+	StartDate   time.Time `gorm:"not null" json:"startDate"`
+	EndDate     time.Time `gorm:"not null" json:"endDate"`
+	Status      string    `gorm:"default:'PLANNING'" json:"status"`
+	CreatedAt   time.Time `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Relationships
 	Project            Project             `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
@@ -23,10 +24,12 @@ type Sprint struct {
 	Evaluations        []Evaluation        `gorm:"foreignKey:SprintID" json:"evaluations,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for t.
 func (Sprint) TableName() string {
 	return "sprints"
 }
 
+// RetrospectiveItem represents the RetrospectiveItem structure.
 type RetrospectiveItem struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	SprintID  string    `gorm:"not null" json:"sprintId"`
@@ -39,6 +42,7 @@ type RetrospectiveItem struct {
 	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 }
 
+// TableName overrides the table name used by GORM for m.
 func (RetrospectiveItem) TableName() string {
 	return "retrospective_items"
 }

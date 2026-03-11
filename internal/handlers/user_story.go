@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateUserStoryRequest represents the CreateUserStoryRequest structure.
 type CreateUserStoryRequest struct {
 	Title       string  `json:"title" binding:"required"`
 	Description string  `json:"description" binding:"required"`
@@ -21,6 +22,7 @@ type CreateUserStoryRequest struct {
 	AssigneeID  *string `json:"assigneeId"`
 }
 
+// UpdateUserStoryRequest represents the UpdateUserStoryRequest structure.
 type UpdateUserStoryRequest struct {
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
@@ -32,17 +34,18 @@ type UpdateUserStoryRequest struct {
 	AssigneeID  *string `json:"assigneeId"`
 }
 
+// CreateUserStory executes the CreateUserStory operation.
 func CreateUserStory(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
 	// Validate Access
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -56,7 +59,7 @@ func CreateUserStory(c *gin.Context) {
 	// Validate Sprint if provided
 	if req.SprintID != nil {
 		var sprint models.Sprint
-		if err := database.DB.First(&sprint, "id = ? AND project_id = ?", *req.SprintID, projectId).Error; err != nil {
+		if err := database.DB.First(&sprint, "id = ? AND project_id = ?", *req.SprintID, projectID).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sprint ID"})
 			return
 		}
@@ -64,7 +67,7 @@ func CreateUserStory(c *gin.Context) {
 
 	// Validate Assignee if provided
 	if req.AssigneeID != nil {
-		if !isProjectMember(*req.AssigneeID, projectId) {
+		if !isProjectMember(*req.AssigneeID, projectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignee must be a project member"})
 			return
 		}
@@ -72,7 +75,7 @@ func CreateUserStory(c *gin.Context) {
 
 	story := models.UserStory{
 		ID:          uuid.NewString(),
-		ProjectID:   projectId,
+		ProjectID:   projectID,
 		Title:       req.Title,
 		Description: req.Description,
 		Acceptance:  req.Acceptance,
@@ -95,26 +98,27 @@ func CreateUserStory(c *gin.Context) {
 	c.JSON(http.StatusCreated, story)
 }
 
+// GetUserStories executes the GetUserStories operation.
 func GetUserStories(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var stories []models.UserStory
-	query := database.DB.Where("project_id = ?", projectId)
+	query := database.DB.Where("project_id = ?", projectID)
 
 	// Optional filtering by Sprint
-	if sprintId := c.Query("sprintId"); sprintId != "" {
-		query = query.Where("sprint_id = ?", sprintId)
+	if sprintID := c.Query("sprintId"); sprintID != "" {
+		query = query.Where("sprint_id = ?", sprintID)
 	}
 
 	if err := query.Preload("Assignee").Preload("Sprint").Find(&stories).Error; err != nil {
@@ -125,23 +129,26 @@ func GetUserStories(c *gin.Context) {
 	c.JSON(http.StatusOK, stories)
 }
 
+// GetUserStory executes the GetUserStory operation.
 func GetUserStory(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	storyId := c.Param("storyId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	storyID := c.Param("storyId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var story models.UserStory
-	if err := database.DB.Preload("Assignee").Preload("Sprint").First(&story, "id = ? AND project_id = ?", storyId, projectId).Error; err != nil {
+	if err := database.DB.Preload("Assignee").
+		Preload("Sprint").
+		First(&story, "id = ? AND project_id = ?", storyID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User story not found"})
 		} else {
@@ -153,17 +160,18 @@ func GetUserStory(c *gin.Context) {
 	c.JSON(http.StatusOK, story)
 }
 
+// UpdateUserStory executes the UpdateUserStory operation.
 func UpdateUserStory(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	storyId := c.Param("storyId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	storyID := c.Param("storyId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -175,7 +183,7 @@ func UpdateUserStory(c *gin.Context) {
 	}
 
 	var story models.UserStory
-	if err := database.DB.First(&story, "id = ? AND project_id = ?", storyId, projectId).Error; err != nil {
+	if err := database.DB.First(&story, "id = ? AND project_id = ?", storyID, projectID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User story not found"})
 		return
 	}
@@ -201,7 +209,7 @@ func UpdateUserStory(c *gin.Context) {
 		// Assuming UUID validation handles empty vs non-existent.
 		// Check valid sprint
 		var count int64
-		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectId).Count(&count)
+		database.DB.Model(&models.Sprint{}).Where("id = ? AND project_id = ?", *req.SprintID, projectID).Count(&count)
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sprint ID"})
 			return
@@ -210,7 +218,7 @@ func UpdateUserStory(c *gin.Context) {
 	}
 	if req.AssigneeID != nil {
 		// Validate assignee
-		if !isProjectMember(*req.AssigneeID, projectId) {
+		if !isProjectMember(*req.AssigneeID, projectID) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignee must be a project member"})
 			return
 		}
@@ -220,10 +228,10 @@ func UpdateUserStory(c *gin.Context) {
 	if req.Status != nil {
 		newStatus := *req.Status
 		updates["status"] = newStatus
-		if newStatus == "DONE" && story.Status != "DONE" {
+		if newStatus == statusDone && story.Status != statusDone {
 			now := time.Now()
 			updates["completed_at"] = &now
-		} else if newStatus != "DONE" && story.Status == "DONE" {
+		} else if newStatus != statusDone && story.Status == statusDone {
 			updates["completed_at"] = nil
 		}
 	}
@@ -234,27 +242,28 @@ func UpdateUserStory(c *gin.Context) {
 	}
 
 	// Fetch updated
-	database.DB.Preload("Assignee").Preload("Sprint").First(&story, "id = ?", storyId)
+	database.DB.Preload("Assignee").Preload("Sprint").First(&story, "id = ?", storyID)
 
 	c.JSON(http.StatusOK, story)
 }
 
+// DeleteUserStory executes the DeleteUserStory operation.
 func DeleteUserStory(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	storyId := c.Param("storyId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	storyID := c.Param("storyId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
-	if err := database.DB.Delete(&models.UserStory{}, "id = ? AND project_id = ?", storyId, projectId).Error; err != nil {
+	if err := database.DB.Delete(&models.UserStory{}, "id = ? AND project_id = ?", storyID, projectID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user story"})
 		return
 	}

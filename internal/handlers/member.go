@@ -11,24 +11,26 @@ import (
 	"gorm.io/gorm"
 )
 
+// AddMemberRequest represents the AddMemberRequest structure.
 type AddMemberRequest struct {
 	Email string `json:"email" binding:"required,email"`
 	Role  string `json:"role"` // MEMBER, ADMIN (within project context, defaults to MEMBER)
 }
 
+// AddMember executes the AddMember operation.
 func AddMember(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
 	// Validate Access: Only OWNER can add members (for simplicity)
 	// Or we could query the project role of the requester
 	var requesterMember models.ProjectMember
-	if err := database.DB.First(&requesterMember, "project_id = ? AND user_id = ?", projectId, userId).Error; err != nil {
+	if err := database.DB.First(&requesterMember, "project_id = ? AND user_id = ?", projectID, userID).Error; err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -54,7 +56,7 @@ func AddMember(c *gin.Context) {
 	// Check if already member
 	var count int64
 	database.DB.Model(&models.ProjectMember{}).
-		Where("project_id = ? AND user_id = ?", projectId, userToAdd.ID).
+		Where("project_id = ? AND user_id = ?", projectID, userToAdd.ID).
 		Count(&count)
 
 	if count > 0 {
@@ -69,7 +71,7 @@ func AddMember(c *gin.Context) {
 
 	member := models.ProjectMember{
 		ID:        uuid.NewString(),
-		ProjectID: projectId,
+		ProjectID: projectID,
 		UserID:    userToAdd.ID,
 		Role:      role,
 		JoinedAt:  time.Now(),
@@ -86,22 +88,23 @@ func AddMember(c *gin.Context) {
 	c.JSON(http.StatusCreated, member)
 }
 
+// GetMembers executes the GetMembers operation.
 func GetMembers(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
 
-	if !isProjectMember(userId, projectId) {
+	if !isProjectMember(userID, projectID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
 
 	var members []models.ProjectMember
-	if err := database.DB.Preload("User").Where("project_id = ?", projectId).Find(&members).Error; err != nil {
+	if err := database.DB.Preload("User").Where("project_id = ?", projectID).Find(&members).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch members"})
 		return
 	}
@@ -109,19 +112,20 @@ func GetMembers(c *gin.Context) {
 	c.JSON(http.StatusOK, members)
 }
 
+// RemoveMember executes the RemoveMember operation.
 func RemoveMember(c *gin.Context) {
-	userIdStr, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userId := userIdStr.(string)
-	projectId := c.Param("projectId")
-	memberId := c.Param("memberId") // This is the ID of the ProjectMember record, or UserID? usually MemberID for REST consistency
+	userID := userIDStr.(string)
+	projectID := c.Param("projectId")
+	memberID := c.Param("memberId")
 
 	// Check Requester Role
 	var requesterMember models.ProjectMember
-	if err := database.DB.First(&requesterMember, "project_id = ? AND user_id = ?", projectId, userId).Error; err != nil {
+	if err := database.DB.First(&requesterMember, "project_id = ? AND user_id = ?", projectID, userID).Error; err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to project"})
 		return
 	}
@@ -131,7 +135,7 @@ func RemoveMember(c *gin.Context) {
 	}
 
 	var memberToRemove models.ProjectMember
-	if err := database.DB.First(&memberToRemove, "id = ? AND project_id = ?", memberId, projectId).Error; err != nil {
+	if err := database.DB.First(&memberToRemove, "id = ? AND project_id = ?", memberID, projectID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
 		}
@@ -139,7 +143,7 @@ func RemoveMember(c *gin.Context) {
 	}
 
 	// Prevent removing self (Owner) via this endpoint?
-	if memberToRemove.UserID == userId {
+	if memberToRemove.UserID == userID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot remove yourself. Delete the project instead."})
 		return
 	}

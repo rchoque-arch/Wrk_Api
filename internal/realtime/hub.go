@@ -40,8 +40,10 @@ type Hub struct {
 	mutex sync.RWMutex
 }
 
+// GlobalHub is the exported variable.
 var GlobalHub = NewHub()
 
+// NewHub executes the NewHub operation.
 func NewHub() *Hub {
 	return &Hub{
 		broadcast:  make(chan Message),
@@ -51,10 +53,12 @@ func NewHub() *Hub {
 	}
 }
 
+// Register method.
 func (h *Hub) Register() chan *Client {
 	return h.register
 }
 
+// Run method.
 func (h *Hub) Run() {
 	for {
 		select {
@@ -98,10 +102,10 @@ func (h *Hub) Run() {
 }
 
 // BroadcastEvent is a helper to send notifications from REST handlers
-func (h *Hub) BroadcastEvent(projectId string, eventType string, payload interface{}) {
+func (h *Hub) BroadcastEvent(projectID string, eventType string, payload interface{}) {
 	msg := Message{
 		Type:      eventType,
-		ProjectID: projectId,
+		ProjectID: projectID,
 		Payload:   payload,
 	}
 	h.broadcast <- msg

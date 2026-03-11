@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// User represents the User structure.
 type User struct {
 	ID        string    `gorm:"primaryKey;type:string" json:"id"`
 	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
@@ -27,6 +28,7 @@ type User struct {
 	RetrospectiveItems []RetrospectiveItem `gorm:"foreignKey:UserID" json:"-"`
 }
 
+// TableName overrides the table name used by GORM for r.
 func (User) TableName() string {
 	return "users"
 }
